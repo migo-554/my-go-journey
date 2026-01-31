@@ -1,10 +1,18 @@
 package main
 
 import (
+	"encoding/json"
 	"fmt"
 	"os"
 	"time"
 )
+
+type Dayreport struct {
+	Date            string
+	Stress          int
+	Words           int
+	WatchingYoutube int
+}
 
 func Proverka(err error) string {
 	if err != nil {
@@ -19,36 +27,38 @@ func Proverka(err error) string {
 
 func main() {
 	now := time.Now()
+
+	report := Dayreport{
+		Date: time.Now().Format("02.01.2006"),
+	}
 	for {
+
 		fmt.Printf("Сегодняшнее время в кемерово: %s\n", now.Format("15:04:03"))
-		var stress int
 		fmt.Print("Введите свой уровень стресса от 1 до 10:")
-		_, err := fmt.Scan(&stress)
+		_, err := fmt.Scan(&report.Stress)
 		StatStress := Proverka(err)
 		if StatStress == "not" {
 			continue
 		}
 
-		var words int
 		fmt.Print("Теперь введите колличество выученных сегодня слов на английском:")
-		_, err1 := fmt.Scan(&words)
+		_, err1 := fmt.Scan(&report.Words)
 		StatWords := Proverka(err1)
 		if StatWords == "not" {
 			continue
 		}
 
-		var watchingYoutube int
 		fmt.Print("Введите колличество минут проебанных сегодня за ютубом:")
-		_, err2 := fmt.Scan(&watchingYoutube)
+		_, err2 := fmt.Scan(&report.WatchingYoutube)
 		StatYoutube := Proverka(err2)
 		if StatYoutube == "not" {
 			continue
 		}
 
-		if stress > 8 {
+		if report.Stress > 8 {
 			fmt.Println("Реактор перегружен Наисрочнейше нужен отдых")
 
-		} else if words > 10 && watchingYoutube == 0 {
+		} else if report.Words > 10 && report.WatchingYoutube == 0 {
 			fmt.Println("Корабль идет на гиперскорости")
 		} else {
 			fmt.Println("Системы стабильный продолжай в том же духе")
@@ -61,13 +71,18 @@ func main() {
 		}
 		defer f.Close()
 
-		report := fmt.Sprintf("[%s] Стресс: %d, Слов %d\n ", time.Now().Format("01.02.2006"), stress, words)
-		_, err = f.WriteString(report)
+		jsonData, err := json.Marshal(report)
 		if err != nil {
-			fmt.Println("Ошибка с записью ", err)
+			fmt.Println("Ошибка кодирования JSON:", err)
 			return
+		}
+
+		_, err = f.Write(jsonData)
+		if err == nil {
+			f.WriteString("\n")
+			fmt.Println("Данне успешно записались в формате JSON!")
 		} else {
-			fmt.Println("Данные успешно записались!")
+			fmt.Println("Ошибка в записи в файл", err)
 		}
 
 		break
