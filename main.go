@@ -13,6 +13,11 @@ type Dayreport struct {
 	Words           int
 	WatchingYoutube int
 }
+type LogMessages struct {
+	Time     string
+	level    string
+	messages []string
+}
 
 func logMessage(level string, messages ...string) {
 	f1, err := os.OpenFile("logs.json", os.O_WRONLY|os.O_APPEND|os.O_CREATE, 0644)
@@ -22,15 +27,23 @@ func logMessage(level string, messages ...string) {
 	}
 	defer f1.Close()
 
-	_, err = f1.WriteString(fmt.Sprintf("[%s]---%s---\n", level, time.Now().Format("15.04.05 (06 01)")))
+	s := make([]string, 0, 5)
+	s = append(s, messages...)
+	logs := LogMessages{
+		Time:     time.Now().Format("15.04.05 (2006 01)"),
+		level:    level,
+		messages: s,
+	}
+
+	jsonData, err := json.Marshal(logs)
+	if err != nil {
+		fmt.Println("Ошибка кодирования JSON:", err)
+		return
+	}
+
+	_, err = f1.Write(jsonData)
 	if err != nil {
 		fmt.Println("Ошибка при запись в логи ", err)
-	}
-	for _, s := range messages {
-		_, err := f1.WriteString("- " + s + "\n")
-		if err != nil {
-			fmt.Println("Ошибка записи строки ", err)
-		}
 	}
 
 }
@@ -39,9 +52,13 @@ func main() {
 		if r := recover(); r != nil {
 			errorMasage := fmt.Sprint(r)
 			logMessage("Паника поймана ", errorMasage)
-		}
-	}()
+			if r != nil {
+				fmt.Println("Паника в логгере: " + fmt.Sprint(r))
+			}
 
+		}
+
+	}()
 	report := Dayreport{
 		Date: time.Now().Format("02.01.2006"),
 	}
